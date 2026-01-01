@@ -1,5 +1,5 @@
 import { format, isSameDay, isToday, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth } from 'date-fns';
-import { GeneratedOccurrence, Frequency } from '@/types/entry';
+import { GeneratedOccurrence } from '@/types/entry';
 import { cn } from '@/lib/utils';
 
 interface CalendarGridProps {
@@ -8,15 +8,6 @@ interface CalendarGridProps {
   occurrenceMap: Map<string, GeneratedOccurrence[]>;
   onDateSelect: (date: Date) => void;
 }
-
-const frequencyColors: Record<Frequency, string> = {
-  daily: 'bg-frequency-daily',
-  weekly: 'bg-frequency-weekly',
-  fortnightly: 'bg-frequency-fortnightly',
-  monthly: 'bg-frequency-monthly',
-  quarterly: 'bg-frequency-quarterly',
-  halfyearly: 'bg-frequency-halfyearly',
-};
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -56,15 +47,16 @@ export function CalendarGrid({
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const hasEntries = dayOccurrences.length > 0;
 
-          // Get unique frequencies for dots
-          const uniqueFrequencies = [...new Set(dayOccurrences.map(o => o.entry.frequency))];
+          // Get entry titles for display (max 2)
+          const displayedEntries = dayOccurrences.slice(0, 2);
+          const remainingCount = dayOccurrences.length - 2;
 
           return (
             <button
               key={dateStr}
               onClick={() => onDateSelect(day)}
               className={cn(
-                'calendar-day bg-card',
+                'calendar-day bg-card min-h-[80px] flex flex-col items-start p-1',
                 isToday(day) && 'today',
                 isSelected && 'selected',
                 hasEntries && 'has-entries',
@@ -73,7 +65,7 @@ export function CalendarGrid({
             >
               <span
                 className={cn(
-                  'text-sm font-medium',
+                  'text-sm font-medium mb-1',
                   isToday(day) && 'text-primary font-semibold',
                   !isCurrentMonth && 'text-muted-foreground'
                 )}
@@ -81,28 +73,24 @@ export function CalendarGrid({
                 {format(day, 'd')}
               </span>
               
-              {/* Entry indicators */}
+              {/* Entry titles */}
               {hasEntries && (
-                <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
-                  {uniqueFrequencies.slice(0, 3).map((freq, idx) => (
+                <div className="flex flex-col gap-0.5 w-full overflow-hidden">
+                  {displayedEntries.map((occurrence, idx) => (
                     <div
-                      key={`${dateStr}-${freq}-${idx}`}
-                      className={cn('entry-dot', frequencyColors[freq])}
-                    />
+                      key={`${dateStr}-${occurrence.entry.id}-${idx}`}
+                      className="text-[9px] leading-tight px-1 py-0.5 bg-primary/10 text-primary rounded truncate w-full text-left"
+                      title={occurrence.entry.title}
+                    >
+                      {occurrence.entry.title}
+                    </div>
                   ))}
-                  {uniqueFrequencies.length > 3 && (
-                    <span className="text-[8px] text-muted-foreground">
-                      +{uniqueFrequencies.length - 3}
+                  {remainingCount > 0 && (
+                    <span className="text-[9px] text-muted-foreground font-medium px-1">
+                      +{remainingCount} more
                     </span>
                   )}
                 </div>
-              )}
-
-              {/* Entry count badge */}
-              {dayOccurrences.length > 0 && (
-                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-medium bg-primary text-primary-foreground rounded-full">
-                  {dayOccurrences.length}
-                </span>
               )}
             </button>
           );

@@ -14,6 +14,7 @@ import { EntryCard } from '@/components/EntryList/EntryCard';
 import { DateDetailSheet } from '@/components/DateDetail/DateDetailSheet';
 import { SummaryView } from '@/components/Summary/SummaryView';
 import { ImportDialog } from '@/components/Import/ImportDialog';
+import { ExportDialog } from '@/components/Export/ExportDialog';
 
 import { useEntries } from '@/hooks/useEntries';
 import { getMonthOccurrences, getDateOccurrences } from '@/lib/recurrence';
@@ -29,6 +30,7 @@ const Index = () => {
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [showDateDetail, setShowDateDetail] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
 
   const { entries, addEntry, updateEntry, deleteEntry, togglePause, importEntries } = useEntries();
@@ -106,6 +108,7 @@ const Index = () => {
         viewMode={viewMode} 
         onViewModeChange={setViewMode}
         onImport={() => setShowImport(true)}
+        onExport={() => setShowExport(true)}
       />
 
       <main className="container py-4">
@@ -204,6 +207,14 @@ const Index = () => {
         open={showImport}
         onOpenChange={setShowImport}
         onImport={handleImport}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExport}
+        onOpenChange={setShowExport}
+        entries={entries}
+        initialDate={currentDate}
       />
     </div>
   );

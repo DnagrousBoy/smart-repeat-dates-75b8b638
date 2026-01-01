@@ -1,4 +1,4 @@
-import { Calendar, BarChart3, List, Upload } from 'lucide-react';
+import { Calendar, BarChart3, List, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -8,9 +8,10 @@ interface AppHeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
   onImport: () => void;
+  onExport: () => void;
 }
 
-export function AppHeader({ viewMode, onViewModeChange, onImport }: AppHeaderProps) {
+export function AppHeader({ viewMode, onViewModeChange, onImport, onExport }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="container py-3">
@@ -18,15 +19,26 @@ export function AppHeader({ viewMode, onViewModeChange, onImport }: AppHeaderPro
           <h1 className="text-lg font-bold text-primary">
             📅 Smart Calendar
           </h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onImport}
-            className="text-xs"
-          >
-            <Upload className="h-4 w-4 mr-1" />
-            Import
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onImport}
+              className="text-xs"
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Import
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onExport}
+              className="text-xs"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+          </div>
         </div>
 
         {/* View Mode Tabs */}

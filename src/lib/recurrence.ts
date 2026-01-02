@@ -82,6 +82,8 @@ function getNextOccurrence(date: Date, frequency: Frequency): Date {
       return addMonths(date, 3);
     case 'halfyearly':
       return addMonths(date, 6);
+    case 'yearly':
+      return addMonths(date, 12);
     default:
       return addDays(date, 1);
   }

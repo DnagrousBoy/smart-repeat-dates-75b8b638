@@ -20,10 +20,20 @@ export interface Entry {
   updatedAt: string;
 }
 
+export interface EntryStatus {
+  id: string;
+  entryId: string;
+  date: string;
+  status: 'COMPLETED' | 'INCOMPLETE';
+  remarks?: string;
+  updatedAt: string;
+}
+
 export interface GeneratedOccurrence {
   entryId: string;
   date: string; // ISO date string
   entry: Entry;
+  status?: EntryStatus; // Optional status for this occurrence
 }
 
 export const frequencyLabels: Record<Frequency, string> = {

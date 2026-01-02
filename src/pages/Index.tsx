@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
-import { addMonths, subMonths, format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { addMonths, subMonths } from 'date-fns';
+import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 import { AppHeader } from '@/components/Layout/AppHeader';
 import { CalendarHeader } from '@/components/Calendar/CalendarHeader';
@@ -15,16 +15,21 @@ import { DateDetailSheet } from '@/components/DateDetail/DateDetailSheet';
 import { SummaryView } from '@/components/Summary/SummaryView';
 import { ImportDialog } from '@/components/Import/ImportDialog';
 import { ExportDialog } from '@/components/Export/ExportDialog';
+import { YearlyView } from '@/components/Yearly/YearlyView';
 
-import { useEntries } from '@/hooks/useEntries';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseEntries } from '@/hooks/useSupabaseEntries';
 import { getMonthOccurrences, getDateOccurrences } from '@/lib/recurrence';
 import { Entry } from '@/types/entry';
 
-type ViewMode = 'calendar' | 'entries' | 'summary';
+type ViewMode = 'calendar' | 'entries' | 'summary' | 'yearly';
 
 const Index = () => {
-  // Default to October 2025
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 1));
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  
+  // Default to January 2026
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [showEntryForm, setShowEntryForm] = useState(false);
@@ -33,8 +38,15 @@ const Index = () => {
   const [showExport, setShowExport] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
 
-  const { entries, addEntry, updateEntry, deleteEntry, togglePause, importEntries } = useEntries();
+  const { entries, isLoaded, addEntry, updateEntry, deleteEntry, togglePause, importEntries } = useSupabaseEntries();
   const { toast } = useToast();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
 
   // Generate occurrences for current month view
   const occurrenceMap = useMemo(() => {
@@ -67,15 +79,15 @@ const Index = () => {
     setShowEntryForm(true);
   };
 
-  const handleFormSubmit = (data: Omit<Entry, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleFormSubmit = async (data: Omit<Entry, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingEntry) {
-      updateEntry(editingEntry.id, data);
+      await updateEntry(editingEntry.id, data);
       toast({
         title: 'Entry Updated',
         description: 'Your recurring entry has been updated.',
       });
     } else {
-      addEntry(data);
+      await addEntry(data);
       toast({
         title: 'Entry Created',
         description: 'Your recurring entry will automatically appear on the calendar.',
@@ -85,8 +97,8 @@ const Index = () => {
     setEditingEntry(null);
   };
 
-  const handleDeleteEntry = (id: string) => {
-    deleteEntry(id);
+  const handleDeleteEntry = async (id: string) => {
+    await deleteEntry(id);
     toast({
       title: 'Entry Deleted',
       description: 'The entry and all its occurrences have been removed.',
@@ -94,19 +106,37 @@ const Index = () => {
     });
   };
 
-  const handleImport = (newEntries: Omit<Entry, 'id' | 'createdAt' | 'updatedAt'>[]) => {
-    importEntries(newEntries);
+  const handleImport = async (newEntries: Omit<Entry, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+    await importEntries(newEntries);
     toast({
       title: 'Import Successful',
       description: `${newEntries.length} entries have been imported.`,
     });
   };
 
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
+
+  // Show loading while checking auth
+  if (authLoading || !isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <AppHeader 
         viewMode={viewMode} 
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         onImport={() => setShowImport(true)}
         onExport={() => setShowExport(true)}
       />
@@ -165,6 +195,12 @@ const Index = () => {
         {viewMode === 'summary' && (
           <div className="animate-fade-in">
             <SummaryView entries={entries} currentDate={currentDate} />
+          </div>
+        )}
+
+        {viewMode === 'yearly' && (
+          <div className="animate-fade-in">
+            <YearlyView entries={entries} />
           </div>
         )}
       </main>

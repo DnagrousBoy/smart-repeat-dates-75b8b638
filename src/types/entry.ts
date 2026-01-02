@@ -4,7 +4,8 @@ export type Frequency =
   | 'fortnightly' 
   | 'monthly' 
   | 'quarterly' 
-  | 'halfyearly';
+  | 'halfyearly'
+  | 'yearly';
 
 export interface Entry {
   id: string;
@@ -32,13 +33,37 @@ export const frequencyLabels: Record<Frequency, string> = {
   monthly: 'Monthly',
   quarterly: '3 Monthly',
   halfyearly: '6 Monthly',
+  yearly: 'Yearly',
 };
 
 export const frequencyDays: Record<Frequency, number> = {
   daily: 1,
   weekly: 7,
   fortnightly: 15,
-  monthly: 30, // Approximate, handled specially
-  quarterly: 90, // Approximate, handled specially
-  halfyearly: 180, // Approximate, handled specially
+  monthly: 30,
+  quarterly: 90,
+  halfyearly: 180,
+  yearly: 365,
+};
+
+// Map frontend frequency to database enum
+export const frequencyToDbEnum: Record<Frequency, string> = {
+  daily: 'DAILY',
+  weekly: 'WEEKLY',
+  fortnightly: 'FORTNIGHTLY',
+  monthly: 'MONTHLY',
+  quarterly: '3_MONTHLY',
+  halfyearly: '6_MONTHLY',
+  yearly: 'YEARLY',
+};
+
+// Map database enum to frontend frequency
+export const dbEnumToFrequency: Record<string, Frequency> = {
+  'DAILY': 'daily',
+  'WEEKLY': 'weekly',
+  'FORTNIGHTLY': 'fortnightly',
+  'MONTHLY': 'monthly',
+  '3_MONTHLY': 'quarterly',
+  '6_MONTHLY': 'halfyearly',
+  'YEARLY': 'yearly',
 };

@@ -61,7 +61,7 @@ export function ExportDialog({ open, onOpenChange, entries, initialDate }: Expor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-center">Export Monthly Report</DialogTitle>
         </DialogHeader>
@@ -88,13 +88,14 @@ export function ExportDialog({ open, onOpenChange, entries, initialDate }: Expor
 
         {/* Preview Table */}
         {showPreview && (
-          <ScrollArea className="h-[200px] border rounded-lg">
+          <ScrollArea className="h-[250px] border rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">
                 <tr>
                   <th className="p-2 text-left border-b w-12">S.No.</th>
                   <th className="p-2 text-left border-b w-24">Date</th>
                   <th className="p-2 text-left border-b">Title</th>
+                  <th className="p-2 text-left border-b w-24">Frequency</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,6 +105,9 @@ export function ExportDialog({ open, onOpenChange, entries, initialDate }: Expor
                     <td className="p-2">{row.date}</td>
                     <td className="p-2 truncate max-w-[150px]" title={row.title}>
                       {row.title || <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="p-2 text-xs font-medium text-muted-foreground">
+                      {row.frequency || <span className="text-muted-foreground/50">—</span>}
                     </td>
                   </tr>
                 ))}

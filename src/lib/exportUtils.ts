@@ -1,4 +1,4 @@
-import { format, getDaysInMonth, startOfMonth } from 'date-fns';
+import { format, getDaysInMonth } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -9,6 +9,7 @@ interface ExportRow {
   sNo: number;
   date: string;
   title: string;
+  frequency: string;
 }
 
 export function generateMonthData(entries: Entry[], year: number, month: number): ExportRow[] {
@@ -24,10 +25,14 @@ export function generateMonthData(entries: Entry[], year: number, month: number)
     // Get all titles for this date, comma separated
     const titles = occurrences.map(o => o.entry.title).join(', ');
     
+    // Get all frequencies for this date, comma separated
+    const frequencies = occurrences.map(o => o.entry.frequency.toUpperCase()).join(', ');
+    
     rows.push({
       sNo: day,
       date: format(date, 'dd/MM/yyyy'),
       title: titles,
+      frequency: frequencies,
     });
   }
 
@@ -35,8 +40,8 @@ export function generateMonthData(entries: Entry[], year: number, month: number)
 }
 
 export function exportToCSV(data: ExportRow[], monthYear: string): void {
-  const header = 'S. No.,Date,Title / Description\n';
-  const rows = data.map(row => `${row.sNo},"${row.date}","${row.title}"`).join('\n');
+  const header = 'S. No.,Date,Title / Description,Frequency\n';
+  const rows = data.map(row => `${row.sNo},"${row.date}","${row.title}","${row.frequency}"`).join('\n');
   const csvContent = header + rows;
   
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -45,16 +50,17 @@ export function exportToCSV(data: ExportRow[], monthYear: string): void {
 
 export function exportToTXT(data: ExportRow[], monthYear: string): void {
   const header = `MONTH - ${monthYear}\n\n`;
-  const separator = '='.repeat(60) + '\n';
-  const columnHeader = 'S. No.  |  Date        |  Title / Description\n';
-  const divider = '-'.repeat(60) + '\n';
+  const separator = '='.repeat(80) + '\n';
+  const columnHeader = 'S. No.  |  Date        |  Title / Description                           |  Frequency\n';
+  const divider = '-'.repeat(80) + '\n';
   
   let content = header + separator + columnHeader + divider;
   
   data.forEach(row => {
     const sNo = row.sNo.toString().padEnd(6);
     const date = row.date.padEnd(12);
-    content += `${sNo}  |  ${date}  |  ${row.title}\n`;
+    const title = row.title.padEnd(45);
+    content += `${sNo}  |  ${date}  |  ${title}  |  ${row.frequency}\n`;
   });
   
   content += separator;
@@ -67,8 +73,8 @@ export function exportToExcel(data: ExportRow[], monthYear: string): void {
   const worksheetData = [
     [`MONTH - ${monthYear}`],
     [],
-    ['S. No.', 'Date', 'Title / Description'],
-    ...data.map(row => [row.sNo, row.date, row.title])
+    ['S. No.', 'Date', 'Title / Description', 'Frequency'],
+    ...data.map(row => [row.sNo, row.date, row.title, row.frequency])
   ];
   
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -78,10 +84,11 @@ export function exportToExcel(data: ExportRow[], monthYear: string): void {
     { wch: 8 },  // S. No.
     { wch: 15 }, // Date
     { wch: 50 }, // Title
+    { wch: 20 }, // Frequency
   ];
   
   // Merge header cell
-  worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+  worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
   
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Report');
@@ -104,13 +111,14 @@ export function exportToPDF(data: ExportRow[], monthYear: string): void {
   // Table
   autoTable(doc, {
     startY: 30,
-    head: [['S. No.', 'Date', 'Title / Description']],
-    body: data.map(row => [row.sNo, row.date, row.title]),
+    head: [['S. No.', 'Date', 'Title / Description', 'Frequency']],
+    body: data.map(row => [row.sNo, row.date, row.title, row.frequency]),
     styles: {
-      fontSize: 10,
-      cellPadding: 3,
+      fontSize: 8, // Shrink font to fit on one page
+      cellPadding: 2,
       lineColor: [0, 0, 0],
       lineWidth: 0.1,
+      overflow: 'linebreak',
     },
     headStyles: {
       fillColor: [240, 240, 240],
@@ -120,8 +128,9 @@ export function exportToPDF(data: ExportRow[], monthYear: string): void {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 15 },
-      1: { halign: 'center', cellWidth: 30 },
+      1: { halign: 'center', cellWidth: 25 },
       2: { halign: 'left', cellWidth: 'auto' },
+      3: { halign: 'center', cellWidth: 35 },
     },
     alternateRowStyles: {
       fillColor: [250, 250, 250],
@@ -147,13 +156,14 @@ export function printPDF(data: ExportRow[], monthYear: string): void {
   // Table
   autoTable(doc, {
     startY: 30,
-    head: [['S. No.', 'Date', 'Title / Description']],
-    body: data.map(row => [row.sNo, row.date, row.title]),
+    head: [['S. No.', 'Date', 'Title / Description', 'Frequency']],
+    body: data.map(row => [row.sNo, row.date, row.title, row.frequency]),
     styles: {
-      fontSize: 10,
-      cellPadding: 3,
+      fontSize: 8,
+      cellPadding: 2,
       lineColor: [0, 0, 0],
       lineWidth: 0.1,
+      overflow: 'linebreak',
     },
     headStyles: {
       fillColor: [240, 240, 240],
@@ -163,8 +173,9 @@ export function printPDF(data: ExportRow[], monthYear: string): void {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 15 },
-      1: { halign: 'center', cellWidth: 30 },
+      1: { halign: 'center', cellWidth: 25 },
       2: { halign: 'left', cellWidth: 'auto' },
+      3: { halign: 'center', cellWidth: 35 },
     },
     alternateRowStyles: {
       fillColor: [250, 250, 250],

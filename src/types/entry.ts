@@ -16,6 +16,7 @@ export interface Entry {
   frequency: Frequency;
   endDate?: string; // Optional end date
   isPaused: boolean;
+  status: 'Completed' | 'In-Completed'; // Added status field
   createdAt: string;
   updatedAt: string;
 }

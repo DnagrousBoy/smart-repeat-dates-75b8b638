@@ -31,6 +31,7 @@ export function EntryForm({ onSubmit, onCancel, initialDate, editEntry }: EntryF
   const [endDate, setEndDate] = useState<Date | undefined>(
     editEntry?.endDate ? new Date(editEntry.endDate) : undefined
   );
+  const [status, setStatus] = useState<'Completed' | 'In-Completed'>(editEntry?.status || 'In-Completed');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,7 @@ export function EntryForm({ onSubmit, onCancel, initialDate, editEntry }: EntryF
       frequency,
       endDate: hasEndDate && endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
       isPaused: editEntry?.isPaused || false,
+      status: status,
     });
   };
 

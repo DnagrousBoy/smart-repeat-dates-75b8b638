@@ -39,6 +39,7 @@ export function useSupabaseEntries() {
         frequency: dbEnumToFrequency[row.frequency] || 'monthly',
         endDate: row.end_date || undefined,
         isPaused: row.is_paused || false,
+        status: (row.status as 'Completed' | 'In-Completed') || 'In-Completed',
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       }));
@@ -72,6 +73,7 @@ export function useSupabaseEntries() {
           amount: entry.amount || null,
           is_paused: entry.isPaused,
           end_date: entry.endDate || null,
+          status: entry.status || 'In-Completed',
         })
         .select()
         .single();
@@ -91,6 +93,7 @@ export function useSupabaseEntries() {
         frequency: dbEnumToFrequency[data.frequency] || 'monthly',
         endDate: data.end_date || undefined,
         isPaused: data.is_paused || false,
+        status: (data.status as 'Completed' | 'In-Completed') || 'In-Completed',
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -117,6 +120,7 @@ export function useSupabaseEntries() {
       if (updates.frequency !== undefined) dbUpdates.frequency = frequencyToDbEnum[updates.frequency];
       if (updates.endDate !== undefined) dbUpdates.end_date = updates.endDate || null;
       if (updates.isPaused !== undefined) dbUpdates.is_paused = updates.isPaused;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
 
       const { error } = await supabase
         .from('calendar_entries')
@@ -184,6 +188,7 @@ export function useSupabaseEntries() {
         amount: entry.amount || null,
         is_paused: entry.isPaused,
         end_date: entry.endDate || null,
+        status: entry.status || 'In-Completed',
       }));
 
       const { error } = await supabase

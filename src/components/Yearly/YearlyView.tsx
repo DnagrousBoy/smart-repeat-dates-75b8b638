@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
-import { format, getDaysInMonth } from 'date-fns';
+import { useMemo, useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Download, FileText, FileSpreadsheet, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Entry } from '@/types/entry';
 import { generateOccurrences } from '@/lib/recurrence';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { useEntryStatuses } from '@/hooks/useEntryStatuses';
 
 interface YearlyViewProps {
   entries: Entry[];
@@ -18,10 +19,18 @@ interface YearlyExportRow {
   date: string;
   title: string;
   frequency: string;
+  status: string;
 }
 
 export function YearlyView({ entries }: YearlyViewProps) {
   const [year, setYear] = useState(2026);
+  const { statuses, fetchStatuses } = useEntryStatuses();
+
+  useEffect(() => {
+    const start = `${year}-01-01`;
+    const end = `${year}-12-31`;
+    fetchStatuses(new Date(year, 0, 1), start, end);
+  }, [year, fetchStatuses]);
 
   // Filter yearly entries
   const yearlyEntries = useMemo(() => {
@@ -54,18 +63,35 @@ export function YearlyView({ entries }: YearlyViewProps) {
 
   // Generate export data
   const generateExportData = (): YearlyExportRow[] => {
-    return yearlyOccurrences.map((occ, idx) => ({
-      sNo: idx + 1,
-      date: format(new Date(occ.date), 'dd/MM/yyyy'),
-      title: occ.title,
-      frequency: 'YEARLY',
-    }));
+    return yearlyOccurrences.map((occ, idx) => {
+      const dateStr = format(new Date(occ.date), 'yyyy-MM-dd');
+      const key = `${occ.entry.id}-${dateStr}`;
+      const statusVal = statuses[key] === 'COMPLETED' ? 'Completed' : 'In-Completed';
+
+      return {
+        sNo: idx + 1,
+        date: format(new Date(occ.date), 'dd/MM/yyyy'),
+        title: occ.title,
+        frequency: 'YEARLY',
+        status: statusVal,
+      };
+    });
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   };
 
   const exportToCSV = () => {
     const data = generateExportData();
-    const header = 'S. No.,Date,Title,Frequency\n';
-    const rows = data.map(row => `${row.sNo},"${row.date}","${row.title}","${row.frequency}"`).join('\n');
+    const header = 'S. No.,Date,Title,Frequency,Status\n';
+    const rows = data.map(row => `${row.sNo},"${row.date}","${row.title}","${row.frequency}","${row.status}"`).join('\n');
     const csvContent = header + rows;
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -77,8 +103,8 @@ export function YearlyView({ entries }: YearlyViewProps) {
     const worksheetData = [
       [`YEARLY TASKS - ${year}`],
       [],
-      ['S. No.', 'Date', 'Title', 'Frequency'],
-      ...data.map(row => [row.sNo, row.date, row.title, row.frequency])
+      ['S. No.', 'Date', 'Title', 'Frequency', 'Status'],
+      ...data.map(row => [row.sNo, row.date, row.title, row.frequency, row.status])
     ];
     
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
@@ -87,8 +113,9 @@ export function YearlyView({ entries }: YearlyViewProps) {
       { wch: 15 },
       { wch: 50 },
       { wch: 15 },
+      { wch: 15 },
     ];
-    worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+    worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
     
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Yearly Report');
@@ -109,8 +136,8 @@ export function YearlyView({ entries }: YearlyViewProps) {
     
     autoTable(doc, {
       startY: 30,
-      head: [['S. No.', 'Date', 'Title', 'Frequency']],
-      body: data.map(row => [row.sNo, row.date, row.title, row.frequency]),
+      head: [['S. No.', 'Date', 'Title', 'Frequency', 'Status']],
+      body: data.map(row => [row.sNo, row.date, row.title, row.frequency, row.status]),
       styles: {
         fontSize: 10,
         cellPadding: 3,
@@ -128,6 +155,7 @@ export function YearlyView({ entries }: YearlyViewProps) {
         1: { halign: 'center', cellWidth: 25 },
         2: { halign: 'left', cellWidth: 'auto' },
         3: { halign: 'center', cellWidth: 25 },
+        4: { halign: 'center', cellWidth: 30 },
       },
       alternateRowStyles: {
         fillColor: [250, 250, 250],
@@ -152,8 +180,8 @@ export function YearlyView({ entries }: YearlyViewProps) {
     
     autoTable(doc, {
       startY: 30,
-      head: [['S. No.', 'Date', 'Title', 'Frequency']],
-      body: data.map(row => [row.sNo, row.date, row.title, row.frequency]),
+      head: [['S. No.', 'Date', 'Title', 'Frequency', 'Status']],
+      body: data.map(row => [row.sNo, row.date, row.title, row.frequency, row.status]),
       styles: {
         fontSize: 10,
         cellPadding: 3,
@@ -171,6 +199,7 @@ export function YearlyView({ entries }: YearlyViewProps) {
         1: { halign: 'center', cellWidth: 25 },
         2: { halign: 'left', cellWidth: 'auto' },
         3: { halign: 'center', cellWidth: 25 },
+        4: { halign: 'center', cellWidth: 30 },
       },
       alternateRowStyles: {
         fillColor: [250, 250, 250],
@@ -181,16 +210,6 @@ export function YearlyView({ entries }: YearlyViewProps) {
     const pdfBlob = doc.output('blob');
     const pdfUrl = URL.createObjectURL(pdfBlob);
     window.open(pdfUrl, '_blank');
-  };
-
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
   };
 
   return (
@@ -264,16 +283,26 @@ export function YearlyView({ entries }: YearlyViewProps) {
                     <th className="text-left py-2 px-2 font-medium text-muted-foreground">S.No.</th>
                     <th className="text-left py-2 px-2 font-medium text-muted-foreground">Date</th>
                     <th className="text-left py-2 px-2 font-medium text-muted-foreground">Title</th>
+                    <th className="text-left py-2 px-2 font-medium text-muted-foreground">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {yearlyOccurrences.map((occ, idx) => (
-                    <tr key={`${occ.date}-${occ.title}-${idx}`} className="border-b last:border-0">
-                      <td className="py-2 px-2 text-muted-foreground">{idx + 1}</td>
-                      <td className="py-2 px-2">{format(new Date(occ.date), 'dd/MM/yyyy')}</td>
-                      <td className="py-2 px-2 font-medium">{occ.title}</td>
-                    </tr>
-                  ))}
+                  {yearlyOccurrences.map((occ, idx) => {
+                    const dateStr = format(new Date(occ.date), 'yyyy-MM-dd');
+                    const key = `${occ.entry.id}-${dateStr}`;
+                    const statusVal = statuses[key] === 'COMPLETED' ? 'Completed' : 'In-Completed';
+                    
+                    return (
+                      <tr key={`${occ.date}-${occ.title}-${idx}`} className="border-b last:border-0">
+                        <td className="py-2 px-2 text-muted-foreground">{idx + 1}</td>
+                        <td className="py-2 px-2">{format(new Date(occ.date), 'dd/MM/yyyy')}</td>
+                        <td className="py-2 px-2 font-medium">{occ.title}</td>
+                        <td className={`py-2 px-2 font-medium ${statusVal === 'Completed' ? 'text-green-600' : 'text-red-500'}`}>
+                          {statusVal}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

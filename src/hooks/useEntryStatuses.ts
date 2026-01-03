@@ -10,11 +10,11 @@ export function useEntryStatuses() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchStatuses = useCallback(async (date: Date) => {
+  const fetchStatuses = useCallback(async (date: Date, customStart?: string, customEnd?: string) => {
     setLoading(true);
     try {
-      const start = format(startOfMonth(date), 'yyyy-MM-dd');
-      const end = format(endOfMonth(date), 'yyyy-MM-dd');
+      const start = customStart || format(startOfMonth(date), 'yyyy-MM-dd');
+      const end = customEnd || format(endOfMonth(date), 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('entry_statuses')
@@ -71,8 +71,6 @@ export function useEntryStatuses() {
         // Revert on error
         setStatuses(prev => {
           const newState = { ...prev };
-          // We don't easily know the previous value, so we might need to refetch or accept the UI glitch
-          // For now, we keep the optimistic value but warn the user
           return newState;
         });
       }

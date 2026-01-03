@@ -297,7 +297,8 @@ export function exportToExcel(data: any[], title: string, type: 'register' | 'sc
   XLSX.writeFile(workbook, `${title.replace(' ', '_')}_${type}.xlsx`);
 }
 
-export function exportToPDF(data: any[], title: string, type: 'register' | 'schedule'): void {
+// Helper to create the PDF document with content
+function createPDF(data: any[], title: string, type: 'register' | 'schedule') {
   const doc = new jsPDF({
     orientation: type === 'register' ? 'portrait' : 'landscape',
     unit: 'mm',
@@ -407,7 +408,19 @@ export function exportToPDF(data: any[], title: string, type: 'register' | 'sche
     doc.text(`Page ${i} / ${pageCount}`, doc.internal.pageSize.getWidth() - 20, doc.internal.pageSize.getHeight() - 5);
   }
   
+  return doc;
+}
+
+export function exportToPDF(data: any[], title: string, type: 'register' | 'schedule'): void {
+  const doc = createPDF(data, title, type);
   doc.save(`${title.replace(' ', '_')}_${type}.pdf`);
+}
+
+export function printPDF(data: any[], title: string, type: 'register' | 'schedule'): void {
+  const doc = createPDF(data, title, type);
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  window.open(pdfUrl, '_blank');
 }
 
 function downloadBlob(blob: Blob, fileName: string) {
